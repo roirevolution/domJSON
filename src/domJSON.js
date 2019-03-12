@@ -28,7 +28,7 @@
 })(this, function(win){
 	"use strict";
 
-	/** 
+	/**
 	 * domJSON is a global variable to store two methods: `.toJSON()` to convert a DOM Node into a JSON object, and `.toDOM()` to turn that JSON object back into a DOM Node
 	 * @namespace domJSON
 	 * @global
@@ -37,7 +37,7 @@
 
 
 
-	/** 
+	/**
 	 * An object specifying a list of fields and how to filter it, or an array with the first value being an optional boolean to convey the same information
 	 * @typedef {Object|Array} FilterList
 	 * @property {boolean} [exclude=false] If this is set to `true`, the `filter` property will specify which fields to exclude from the result (boolean difference), not which ones to include (boolean intersection)
@@ -46,7 +46,7 @@
 
 
 
-	/** 
+	/**
 	 * Default metadata for a JSON object
 	 * @private
 	 * @ignore
@@ -56,10 +56,10 @@
 		userAgent: window.navigator && window.navigator.userAgent ? window.navigator.userAgent : null,
 		version: '0.1.2'
 	};
-	
-	
-	
-	/** 
+
+
+
+	/**
 	 * Default options for creating the JSON object
 	 * @private
 	 * @ignore
@@ -83,7 +83,7 @@
 
 
 
-	/** 
+	/**
 	 * Default options for creating a DOM node from a previously generated domJSON object
 	 * @private
 	 * @ignore
@@ -95,7 +95,7 @@
 
 
 
-	/** 
+	/**
 	 * A list of disallowed HTMLElement tags - there is no flexibility here, these cannot be processed by domJSON for security reasons!
 	 * @private
 	 * @ignore
@@ -107,7 +107,7 @@
 
 
 
-	/** 
+	/**
 	 * A list of node properties that must be copied if they exist; there is no user option that will remove these
 	 * @private
 	 * @ignore
@@ -117,10 +117,10 @@
 		'nodeValue',
 		'tagName'
 	];
-	
-	
-	
-	/** 
+
+
+
+	/**
 	 * A list of node properties to specifically avoid simply copying; there is no user option that will allow these to be copied directly
 	 * @private
 	 * @ignore
@@ -133,10 +133,10 @@
 		'dataset',
 		'style'
 	];
-	
-	
-	
-	/** 
+
+
+
+	/**
 	 * A list of serialized read-only nodes to ignore; these can ovewritten if the user specifies the "filter" option
 	 * @private
 	 * @ignore
@@ -507,9 +507,8 @@
 		//Filter the style object
 		return (opts.computedStyle instanceof Array) ? boolFilter(css, opts.computedStyle) : css;
 	};
-	
-	
-	
+
+
 	/**
 	 * Convert a single DOM Node into a simple object
 	 * @param {Node} node The DOM Node that will be converted
@@ -535,13 +534,18 @@
 		}
 
 		//Copy all attributes and styles, if allowed
-		if (opts.attributes && node.attributes) { 
+		if (opts.attributes && node.attributes) {
 			copy.attributes = attrJSON(node, opts);
 		}
 		if (opts.computedStyle && (style = styleJSON(node, opts))) {
 			copy.style = style;
 		}
-		
+
+		//Runs a function across all nodes.
+		if (opts.mapFunction) {
+			copy = opts.mapFunction(node, copy)
+		}
+
 		//Should we continue iterating?
 		if (opts.deep === true || (typeof opts.deep === 'number' && opts.deep > depth)) {
 			//We should!
@@ -560,9 +564,9 @@
 		}
 		return copy;
 	};
-	
-	
-	
+
+
+
 	/**
 	 * Take a DOM node and convert it to simple object literal (or JSON string) with no circular references and no functions or events
 	 * @param {Node} node The actual DOM Node which will be the starting point for parsing the DOM Tree
@@ -627,10 +631,10 @@
 				options.domProperties = [true].concat(ignoring);
 			}
 		}
-		
+
 		//Transform the node into an object literal
 		copy = toJSON(node, options, 0);
-		
+
 		//Wrap our copy object in a nice object of its own to save some metadata
 		if (options.metadata) {
 			output.meta = extend({}, metadata, {
@@ -652,7 +656,7 @@
 		} else {
 			output = copy;
 		}
-		
+
 		//If opts.stringify is true, turn the output object into a JSON string
 		if (options.stringify) {
 			return JSON.stringify(output);
