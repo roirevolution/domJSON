@@ -8,7 +8,7 @@
         if (typeof module !== "undefined" && module.exports) {
             module.exports = domJSON;
         }
-        exports = dmoJSON;
+        exports = domJSON;
     } else {
         window.domJSON = factory(root);
     }
@@ -31,10 +31,12 @@
         htmlOnly: false,
         metadata: true,
         serialProperties: false,
-        stringify: false
+        stringify: false,
+        allowDangerousElements: false
     };
     var defaultsForToDOM = {
-        noMeta: false
+        noMeta: false,
+        allowDangerousElements: false
     };
     var banned = [ "link", "script" ];
     var required = [ "nodeType", "nodeValue", "tagName" ];
@@ -197,6 +199,11 @@
     var copyJSON = function(node, opts) {
         var copy = {};
         for (var n in node) {
+            try {
+                node[n];
+            } catch (e) {
+                continue;
+            }
             if (typeof node[n] !== "undefined" && typeof node[n] !== "function" && n.charAt(0).toLowerCase() === n.charAt(0)) {
                 if (typeof node[n] !== "object" || node[n] instanceof Array) {
                     if (opts.cull) {
@@ -244,9 +251,11 @@
     var toJSON = function(node, opts, depth) {
         var style, kids, kidCount, thisChild, children, copy = copyJSON(node, opts);
         if (node.nodeType === 1) {
-            for (var b in banned) {
-                if (node.tagName.toLowerCase() === banned[b]) {
-                    return null;
+            if (!opts.allowDangerousElements) {
+                for (var b in banned) {
+                    if (node.tagName.toLowerCase() === banned[b]) {
+                        return null;
+                    }
                 }
             }
         } else if (node.nodeType === 3 && !node.nodeValue.trim()) {
@@ -257,6 +266,9 @@
         }
         if (opts.computedStyle && (style = styleJSON(node, opts))) {
             copy.style = style;
+        }
+        if (opts.mapFunction) {
+            copy = opts.mapFunction(node, copy);
         }
         if (opts.deep === true || typeof opts.deep === "number" && opts.deep > depth) {
             children = [];
@@ -373,8 +385,15 @@
             return false;
         }
     };
-    var toDOM = function(obj, parent, doc) {
+    var toDOM = function(obj, parent, doc, opts) {
         if (obj.nodeType) {
+            if (obj.nodeType === 1 && !opts.allowDangerousElements) {
+                for (var b in banned) {
+                    if (obj.tagName.toLowerCase() === banned[b]) {
+                        return false;
+                    }
+                }
+            }
             var node = createNode(obj.nodeType, doc, obj);
             parent.appendChild(node);
         } else {
@@ -399,7 +418,7 @@
         }
         if (obj.childNodes && obj.childNodes.length) {
             for (var c in obj.childNodes) {
-                toDOM(obj.childNodes[c], node, doc);
+                toDOM(obj.childNodes[c], node, doc, opts);
             }
         }
     };
@@ -411,9 +430,9 @@
         options = extend({}, defaultsForToDOM, opts);
         node = document.createDocumentFragment();
         if (options.noMeta) {
-            toDOM(obj, node, node);
+            toDOM(obj, node, node, options);
         } else {
-            toDOM(obj.node, node, node);
+            toDOM(obj.node, node, node, options);
         }
         return node;
     };
