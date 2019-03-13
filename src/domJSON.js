@@ -516,7 +516,7 @@
 	 * @private
 	 * @ignore
 	*/
-	var toJSON = function(node, opts, depth) {
+	var toJSON = function (node, opts, depth) {
 		var style, kids, kidCount, thisChild, children, copy = copyJSON(node, opts);
 
 		//Per default, some tags are not allowed
@@ -541,10 +541,9 @@
 			copy.style = style;
 		}
 
-		//Runs a function across all nodes.
 		if (opts.mapFunction) {
 			copy = opts.mapFunction(node, copy)
-		}
+	}
 
 		//Should we continue iterating?
 		if (opts.deep === true || (typeof opts.deep === 'number' && opts.deep > depth)) {
@@ -583,6 +582,7 @@
 	 * @todo {boolean|FilterList} [opts.parse=`false`] a `FilterList` of properties that are DOM nodes, but will still be copied **PLANNED**
 	 * @param {boolean|FilterList} [opts.serialProperties=`true`] Use `true` to ignore the properties that store a serialized version of this DOM Node (ex: outerHTML, innerText, etc), or specify a `FilterList` of serial properties (no boolean search!)
 	 * @param {boolean} [opts.stringify=`false`] Output a JSON string, or just a JSON-ready javascript object?
+	 * @param {string} [opts.mapFunction] a stringified function. Puppeteer does not allow functions to be passed to other functions in evaluate callbacks, meaning we have to pass the stringified function and turn it back into a function here.
 	 * @return {Object|string} A JSON-friendly object, or JSON string, of the DOM node -> JSON conversion output
 	 * @method
 	 * @memberof domJSON
@@ -602,6 +602,7 @@
 		options.computedStyle = toShorthand(options.computedStyle);
 		options.domProperties = toShorthand(options.domProperties);
 		options.serialProperties = toShorthand(options.serialProperties);
+		options.mapFunction = new Function('return (' + options.mapFunction + ').apply(null, arguments)')
 
 		//Make sure there is a base URL for absolute path conversions
 		options.absoluteBase = win.location.origin + '/';
